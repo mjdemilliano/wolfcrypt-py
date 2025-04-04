@@ -275,6 +275,45 @@ if _lib.AES_ENABLED:
             else:
                 raise ValueError("Invalid mode associated to cipher")
 
+if _lib.AES_SIV_ENABLED:
+    class AesSiv(object):
+        """
+        AES-SIV (Synthetic Initialization Vector) implementation as described in RFC 5297.
+        """
+        AES_KEY_SIZES = [16, 24, 32]
+        AES_BLOCK_SIZE = 16
+
+        def __init__(self, key):
+            self._key = t2b(key)
+            if len(self._key) not in AesSiv.AES_KEY_SIZES:
+                raise ValueError(f"key size {len(self._key)} in bytes must be in {AesSiv.AES_KEY_SIZES}")
+
+        def encrypt(self, associated_data, nonce, plaintext):
+            associated_data = t2b(associated_data)
+            nonce = t2b(nonce)
+            plaintext = t2b(plaintext)
+            siv = _ffi.new("byte[%d]" % AesSiv.AES_BLOCK_SIZE)
+            ciphertext = _ffi.new("byte[%d]" % len(plaintext))
+            ret = _lib.wc_AesSivEncrypt(self._key, len(self._key), associated_data, len(associated_data),
+                nonce, len(nonce), plaintext, len(plaintext), siv, ciphertext)
+            if ret < 0:  # pragma: no cover
+                raise WolfCryptError("AES-SIV encryption error (%d)" % ret)
+            return _ffi.buffer(siv)[:], _ffi.buffer(ciphertext)[:]
+
+        def decrypt(self, associated_data, nonce, siv, ciphertext):
+            associated_data = t2b(associated_data)
+            nonce = t2b(nonce)
+            siv = t2b(siv)
+            if len(siv) != AesSiv.AES_BLOCK_SIZE:
+                raise ValueError(f"SIV size {len(siv)} in bytes must be {AesSiv.AES_BLOCK_SIZE}")
+            ciphertext = t2b(ciphertext)
+            plaintext = _ffi.new("byte[%d]" % len(ciphertext))
+            ref = _lib.wc_AesSivDecrypt(self._key, len(self._key), associated_data, len(associated_data),
+                    nonce, len(nonce), ciphertext, len(ciphertext), siv, plaintext)
+            if ref < 0:
+                raise WolfCryptError("AES-SIV decryption error (%d)" % ref)
+            return _ffi.buffer(plaintext)[:]
+
 if _lib.AESGCM_STREAM_ENABLED:
     class AesGcmStream(object):
         """
