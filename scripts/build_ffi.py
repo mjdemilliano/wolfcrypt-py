@@ -560,6 +560,7 @@ def build_ffi(local_wolfssl, features):
         int wc_InitRngNonce_ex(WC_RNG*, const byte*, word32, void*, int);
         int wc_RNG_GenerateBlock(WC_RNG*, byte*, word32);
         int wc_RNG_GenerateByte(WC_RNG*, byte*);
+        int wc_RNG_DRBG_Reseed(WC_RNG*, const byte*, word32);
         int wc_FreeRng(WC_RNG*);
     """
 

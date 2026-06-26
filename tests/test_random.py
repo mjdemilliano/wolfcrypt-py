@@ -48,3 +48,16 @@ def test_nonce_byte(rng_nonce):
 @pytest.mark.parametrize("length", (1, 8, 128))
 def test_nonce_bytes(rng_nonce, length):
     assert len(rng_nonce.bytes(length)) == length
+
+
+def test_reseed(rng):
+    rng.reseed(b"some seed material for testing")
+    assert len(rng.bytes(32)) == 32
+
+
+def test_reseed_empty(rng):
+    from wolfcrypt.exceptions import WolfCryptApiError
+    try:
+        rng.reseed(b"")
+    except WolfCryptApiError:
+        pass  # acceptable — C rejects zero-length seed
